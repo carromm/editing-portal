@@ -3,8 +3,7 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 
-export default function UpdateComponent({ sku, removeSku }) {
-
+export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
   const [uploadedImage, setUploadedImage] = useState(null);
   const [uploadingImageState, setUploadingImageState] = useState(false);
   const [awsUrl, setAwsUrl] = useState(null);
@@ -12,26 +11,36 @@ export default function UpdateComponent({ sku, removeSku }) {
   async function onAction() {
     uploadedImageHandler();
 
-    alert("Sending Action: " + "accepted");
+    const myHeaders = new Headers();
+    myHeaders.append("accept", "application/json");
+    myHeaders.append("Authorization", enterpriseId);
 
-    const response = await fetch("/api/postSkuList", {
+    const formdata = new FormData();
+    formdata.append("sku_id", sku.sku_id);
+    formdata.append("qc_status", "accepted");
+    formdata.append("qc_comment", "done");
+    formdata.append("batch_id", sku.batch_id ? sku.batch_id : "");
+
+    const requestOptions = {
       method: "POST",
-      body: JSON.stringify({
-        sku_id: sku.sku_id,
-        qc_status: "accepted",
-        qc_comment: "done",
-        batch_id: sku.batch_id ? sku.batch_id : "",
-      }),
-    });
+      headers: myHeaders,
+      body: formdata,
+      redirect: "follow",
+    };
+
+    const response = await fetch(
+      "https://api.carromm.com/automobile/qc",
+      requestOptions
+    );
+
     const data = await response.json();
     console.log(data);
-    alert("Success")
+    alert("Success");
     removeSku(sku.sku_id);
   }
 
   async function uploadedImageHandler() {
-    alert("Image Uploaded");
-    const response = await fetch("/api/uploadImage", {
+    const response = await fetch("https://api.carromm.com/s3/presigned-url", {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -41,21 +50,33 @@ export default function UpdateComponent({ sku, removeSku }) {
         type: "editing",
       }),
     });
+
     const data = await response.json();
     setAwsUrl(data.url);
 
+    const myHeaders = new Headers();
+    myHeaders.append("accept", "application/json");
+    myHeaders.append("Authorization", enterpriseId);
 
-    const response2 = await fetch("/api/postBatchSku", {
-      body: JSON.stringify({
-        sku_id: sku.sku_id,
-        image_url: data.url,
-        batch_id: sku.batch_id ? sku.batch_id : "",
-      }),
-    });
+    const formdata = new FormData();
+    formdata.append("sku_id", sku.sku_id);
+    formdata.append("image_url", data.url);
+    formdata.append("batch_id", sku.batch_id ? sku.batch_id : "");
+
+    const requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: formdata,
+      redirect: "follow",
+    };
+
+    const response2 = await fetch(
+      "https://api.carromm.com/automobile/editor",
+      requestOptions
+    );
 
     const data2 = await response2.json();
-    console.log(data2);    
-    
+    console.log(data2);
   }
 
   return (
@@ -73,6 +94,9 @@ export default function UpdateComponent({ sku, removeSku }) {
             <p className="hover:border-black border bg-white text-sm p-2 px-3 w-fit rounded-md">
               BG ID: {sku.bg_id}
             </p>
+            <p className="hover:border-black border bg-white text-sm p-2 px-3 w-fit rounded-md">
+              QC comments: {sku.qc_comment}
+            </p>
           </div>
           <div className="flex h-full relative w-full justify-center">
             <Image
@@ -82,7 +106,6 @@ export default function UpdateComponent({ sku, removeSku }) {
               alt="Input Image"
               className="object-contain"
             />
-
           </div>
         </div>
         <div className="flex w-full md:w-7/12 h-min relative">
@@ -107,11 +130,18 @@ export default function UpdateComponent({ sku, removeSku }) {
               className="object-contain"
             />
             <div className="absolute inset-0 bg-none"></div>
-            <label className="flex items-center justify-center absolute inset-0 cursor-pointer bg-gray-500 bg-opacity-50 hover:bg-opacity-70 rounded-md
-            "  htmlFor="fileInput">
+            <label
+              className="flex items-center justify-center absolute inset-0 cursor-pointer bg-gray-500 bg-opacity-50 hover:bg-opacity-70 rounded-md
+            "
+              htmlFor="fileInput"
+            >
               <div className="text-center text-white">
                 <p className="text-2xl font-bold">
-                  {uploadingImageState ? "Uploading" : uploadedImage ? "Change" : "Upload"}
+                  {uploadingImageState
+                    ? "Uploading"
+                    : uploadedImage
+                    ? "Change"
+                    : "Upload"}
                 </p>
               </div>
             </label>
@@ -136,10 +166,13 @@ export default function UpdateComponent({ sku, removeSku }) {
           className="hidden"
           id="fileInput"
         />
-        <button className="bg-black text-white p-4 px-8 rounded-md text-2xl font-bold" onClick={() => onAction()}>
+        <button
+          className="bg-black text-white p-4 px-8 rounded-md text-2xl font-bold"
+          onClick={() => onAction()}
+        >
           Approve
         </button>
       </div>
-    </div >
+    </div>
   );
 }

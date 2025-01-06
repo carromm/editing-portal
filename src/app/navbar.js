@@ -23,7 +23,9 @@ export default function Navbar() {
 
   return (
     <div className="flex justify-between items-center p-4 border-b-2 border-gray-100">
-      <Image src="/logo.png" alt="Logo" width={150} height={100} />
+      <a href="/enterprise-id">
+        <Image src="/Logo.png" alt="Logo" width={150} height={100} />
+      </a>
       <p></p>
       <nav>
         <button onClick={() => logout()} className="p-2">

@@ -13,47 +13,51 @@ function UpdatePage() {
 
   const [skuList, setSkuList] = useState([
     {
-      "sku_id": "Loading...",
-      "batch_id": "Loading...",
-      "bg_id": "Loading...",
-      "model_version": "Loading...",
-      "input_url": null,
-      "output_url": null,
-      "qc_url": "",
-      "qc_comment": "",
-      "status": "Loading...",
-    }]);
+      sku_id: "Loading...",
+      batch_id: "Loading...",
+      bg_id: "Loading...",
+      model_version: "Loading...",
+      input_url: null,
+      output_url: null,
+      qc_url: "",
+      qc_comment: "",
+      status: "Loading...",
+    },
+  ]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 1;
 
   useEffect(() => {
     async function fetchSkuData() {
-      const response = await fetch("/api/getSkuList", {
-        method: "GET",
-        headers: {
-          "Authorization": enterpriseId,
-        },
-      });
+      const response = await fetch(
+        "https://api.imagekoncept.com/automobile/editor",
+        {
+          method: "GET",
+          headers: {
+            Authorization: enterpriseId,
+          },
+          redirect: "follow",
+        }
+      );
       const data = await response.json();
+      console.log(data);
       if (data.message === "Unauthorized") {
-        alert("Unauthorized");
+        alert("Invalid enterprise id");
         router.push("/enterprise-id");
         return;
-      }
-      else {
+      } else {
         if (Array.isArray(data)) {
           setSkuList(data);
         } else {
-          alert.error("Server response error");
+          alert.error("Something went wrong, please try again in some time.");
           router.push("/enterprise-id");
           return;
         }
-
       }
     }
 
     fetchSkuData();
-  }, [enterpriseId, router]);
+  }, [enterpriseId]);
 
   const handleNextPage = () => {
     setCurrentPage((prevPage) => prevPage + 1);
@@ -78,6 +82,7 @@ function UpdatePage() {
             key={sku.sku_id}
             sku={sku}
             removeSku={removeSku}
+            enterpriseId={enterpriseId}
           />
         ))}
         <div className="flex justify-center gap-2">
