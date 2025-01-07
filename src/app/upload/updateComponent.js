@@ -40,44 +40,73 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
   }
 
   async function uploadedImageHandler() {
-    const response = await fetch("https://api.carromm.com/s3/presigned-url", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        file_name: uploadedImage,
-        type: "editing",
-      }),
-    });
+    try {
+      const myHeaders = new Headers();
+      myHeaders.append("accept", "application/json");
+      myHeaders.append("Authorization", enterpriseId);
 
-    const data = await response.json();
-    setAwsUrl(data.url);
+      const formdata = new FormData();
+      formdata.append("file_name", uploadedImage.name); 
+      formdata.append("type", "editing");              
 
-    const myHeaders = new Headers();
-    myHeaders.append("accept", "application/json");
-    myHeaders.append("Authorization", enterpriseId);
+      const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: formdata,
+        redirect: "follow"
+      };
 
-    const formdata = new FormData();
-    formdata.append("sku_id", sku.sku_id);
-    formdata.append("image_url", data.url);
-    formdata.append("batch_id", sku.batch_id ? sku.batch_id : "");
+      const response = await fetch("https://api.carromm.com/s3/presigned-url", requestOptions);
+      const data = await response.json();
+      const presignedUrl = data.presigned_url; 
+      const awsUrl = data.url; 
+      console.log(awsUrl);
+      setAwsUrl(awsUrl);
 
-    const requestOptions = {
-      method: "POST",
-      headers: myHeaders,
-      body: formdata,
-      redirect: "follow",
-    };
+      
+      const s3UploadResponse = await fetch(presignedUrl, {
+        method: "PUT", 
+        headers: {
+          "Content-Type": uploadedImage.type, 
+        },
+        body: uploadedImage, 
+      });
 
-    const response2 = await fetch(
-      "https://api.carromm.com/automobile/editor",
-      requestOptions
-    );
+      if (!s3UploadResponse.ok) {
+        throw new Error("Failed to upload image to S3");
+      }
 
-    const data2 = await response2.json();
-    console.log(data2);
+      console.log(s3UploadResponse);
+
+      const myHeaders2 = new Headers();
+      myHeaders2.append("accept", "application/json");
+      myHeaders2.append("Authorization", enterpriseId);
+
+      const formdata2 = new FormData();
+      formdata2.append("sku_id", sku.sku_id);
+      formdata2.append("image_url", awsUrl);
+      formdata2.append("batch_id", sku.batch_id ? sku.batch_id : "");
+
+      const requestOptions2 = {
+        method: "POST",
+        headers: myHeaders2,
+        body: formdata2,
+        redirect: "follow"
+      };
+
+      const response2 = await fetch(
+        "https://api.carromm.com/automobile/editor",
+        requestOptions2
+      );
+
+      const data2 = await response2.json();
+      console.log(data2);
+
+    } catch (error) {
+      console.error("Error in uploadedImageHandler:", error);
+    }
   }
+
 
   return (
     <div key={sku.sku_id} className="flex flex-col items-center px-10 ">
@@ -140,8 +169,8 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
                   {uploadingImageState
                     ? "Uploading"
                     : uploadedImage
-                    ? "Change"
-                    : "Upload"}
+                      ? "Change"
+                      : "Upload"}
                 </p>
               </div>
             </label>
