@@ -3,28 +3,17 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import axios from "axios";
-
+import { BarLoader } from "react-spinners";
 export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
   const [uploadedImageDetails, setUploadedImageDetails] = useState({
     image_url: null,
     file: null,
   });
+  const [showSpinner, setShowSpinner] = useState(false);
   const [uploadingImageState, setUploadingImageState] = useState(false);
   const [awsUrl, setAwsUrl] = useState(null);
 
-  async function onAction() {
-    if (!uploadedImageDetails.file) {
-      alert("Please upload an image");
-      return;
-    }
-    try {
-      await uploadedImageHandler();
-    } catch (error) {
-      console.log(error);
-      alert("Failed to upload image, try again after some time");
-      return;
-    }
-
+  async function approveQc() {
     const myHeaders = new Headers();
     myHeaders.append("accept", "application/json");
     myHeaders.append("Authorization", enterpriseId);
@@ -48,7 +37,41 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
     );
 
     const data = await response.json();
-    console.log(data);
+    if (!response.ok) {
+      console.log(data);
+    } else {
+      throw new Error("Failed to approve QC");
+    }
+  }
+
+  async function onAction() {
+
+    if (!uploadedImageDetails.file) {
+      alert("Please upload an image");
+      return;
+    }
+    setShowSpinner(true);
+
+    try {
+      await uploadedImageHandler();
+    } catch (error) {
+      console.log(error);
+      setShowSpinner(false);
+      alert("Failed to upload image, try again after some time");
+      return;
+    }
+
+    try {
+      await approveQc();
+    } catch (error) {
+      console.log(error);
+      setShowSpinner(false);
+      alert("Failed to approve QC, try again after some time");
+      return;
+    }
+
+    setShowSpinner(false);
+
     alert("Success");
     removeSku(sku.sku_id);
   }
@@ -120,6 +143,7 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
 
   return (
     <div key={sku.sku_id} className="flex flex-col items-center px-10 ">
+      <BarLoader color="#000" height={10} width={300} loading={showSpinner} />
       <div className="flex flex-col md:flex-row p-4 gap-10">
         <div className="flex flex-col w-full md:w-5/12 gap-5 items-center">
           <div className="flex flex-col w-full bg-indigo-50 p-5 pl-10 gap-2 rounded-md border-indigo-500 border-2 shadow-md">
