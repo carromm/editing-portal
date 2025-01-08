@@ -42,79 +42,15 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
       redirect: "follow",
     };
 
-    // const response = await fetch(
-    //   "https://api.carromm.com/automobile/qc",
-    //   requestOptions
-    // );
+    const response = await fetch(
+      "https://api.carromm.com/automobile/qc",
+      requestOptions
+    );
 
-    // const data = await response.json();
-    // console.log(data);
+    const data = await response.json();
+    console.log(data);
     alert("Success");
     removeSku(sku.sku_id);
-  }
-
-  async function uploadImageToS3(presignedURL) {
-
-
-    try {
-      // Convert base64 string to a binary Blob
-      // const base64Data = uploadedImageDetails.image_url.split(',')[1]; // Remove the data:image/jpeg;base64, part
-      // const binaryData = atob(base64Data);
-      // const byteNumbers = new Uint8Array(binaryData.length);
-
-      // for (let i = 0; i < binaryData.length; i++) {
-      //   byteNumbers[i] = binaryData.charCodeAt(i);
-      // }
-
-      // const blob = new Blob([byteNumbers], { type: uploadedImageDetails.file.type });
-
-      // Upload the blob
-      // Add CancelToken to handle timeouts and retries
-      const CancelToken = axios.CancelToken;
-      const source = CancelToken.source();
-
-      // Configure axios request with proper headers and options
-      const config = {
-        headers: {
-          'Content-Type': uploadedImageDetails.file.type,
-          'x-amz-acl': 'public-read' // Add ACL header for S3
-        },
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
-        timeout: 60000, // 60 second timeout
-        cancelToken: source.token
-      };
-
-      // const response = await fetch(presignedURL, {
-      //   method: 'PUT',
-      //   body: uploadedImageDetails.file,
-      //   headers: {
-      //     'Content-Type': uploadedImageDetails.file.type, // Set the file's MIME type
-      //   },
-      // });
-      const filedata = await uploadedImageDetails.file.arrayBuffer();
-      console.log(filedata);
-      const response = await axios.put(presignedURL, uploadedImageDetails.file, config);
-      // const response = await axios({
-      //   method: 'PUT',
-      //   url: presignedURL,
-      //   data: blob,
-      //   ...config
-      // });
-
-      if (!response.ok) {
-        throw new Error("Failed to upload image to S3");
-      }
-
-      console.log('File uploaded successfully:', response.status, response.statusText);
-    } catch (error) {
-      console.error('Error uploading file:', error.message);
-      throw error;
-    }
-
-
-
-
   }
 
   async function uploadedImageHandler() {
@@ -147,23 +83,14 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
     setAwsUrl(awsUrl);
 
 
-    await uploadImageToS3(presignedUrl);
+    const s3UploadResponse = await fetch(presignedUrl, {
+      method: 'PUT',
+      body: uploadedImageDetails.file
+    });
 
-    // // Create cancel token source for the upload
-    // const cancelTokenSource = axios.CancelToken.source();
-    // const file = uploadedImageDetails.file;
-    // const s3UploadResponse = await axios.put(presignedUrl, file, {
-    //   headers: {
-    //     "Content-Type": file.type,
-    //   },
-    //   cancelToken: cancelTokenSource.token
-    // });
-
-    // if (!s3UploadResponse.ok) {
-    //   throw new Error("Failed to upload image to S3");
-    // }
-
-    console.log(s3UploadResponse);
+    if (!s3UploadResponse.ok) {
+      throw new Error("Failed to upload image to S3");
+    }
 
     const myHeaders2 = new Headers();
     myHeaders2.append("accept", "application/json");
@@ -181,13 +108,13 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
       redirect: "follow",
     };
 
-    // const response2 = await fetch(
-    //   "https://api.carromm.com/automobile/editor",
-    //   requestOptions2
-    // );
+    const response2 = await fetch(
+      "https://api.carromm.com/automobile/editor",
+      requestOptions2
+    );
 
-    // const data2 = await response2.json();
-    // console.log(data2);
+    const data2 = await response2.json();
+    console.log(data2);
 
   }
 
@@ -266,21 +193,16 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
             const file = e.target.files[0];
 
             if (file) {
-              setUploadedImageDetails({
-                image_url: null,
-                file: file,
-              });
-
-              // const reader = new FileReader();
-              // reader.onloadend = () => {
-              //   const imageUrl = reader.result;
-              //   console.log();
-              //   setUploadedImageDetails({
-              //     image_url: imageUrl,
-              //     file: file,
-              //   });
-              // };
-              // reader.readAsDataURL(file);
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const imageUrl = reader.result;
+                console.log();
+                setUploadedImageDetails({
+                  image_url: imageUrl,
+                  file: file,
+                });
+              };
+              reader.readAsDataURL(file);
               setUploadingImageState(false);
             }
           }}
