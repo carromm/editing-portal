@@ -2,14 +2,28 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import axios from "axios";
 
 export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
-  const [uploadedImage, setUploadedImage] = useState(null);
+  const [uploadedImageDetails, setUploadedImageDetails] = useState({
+    image_url: null,
+    file: null,
+  });
   const [uploadingImageState, setUploadingImageState] = useState(false);
   const [awsUrl, setAwsUrl] = useState(null);
 
   async function onAction() {
-    uploadedImageHandler();
+    if (!uploadedImageDetails.file) {
+      alert("Please upload an image");
+      return;
+    }
+    try {
+      await uploadedImageHandler();
+    } catch (error) {
+      console.log(error);
+      alert("Failed to upload image, try again after some time");
+      return;
+    }
 
     const myHeaders = new Headers();
     myHeaders.append("accept", "application/json");
@@ -40,43 +54,68 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
   }
 
   async function uploadedImageHandler() {
-    const response = await fetch("https://api.carromm.com/s3/presigned-url", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        file_name: uploadedImage,
-        type: "editing",
-      }),
-    });
-
-    const data = await response.json();
-    setAwsUrl(data.url);
 
     const myHeaders = new Headers();
     myHeaders.append("accept", "application/json");
     myHeaders.append("Authorization", enterpriseId);
 
-    const formdata = new FormData();
-    formdata.append("sku_id", sku.sku_id);
-    formdata.append("image_url", data.url);
-    formdata.append("batch_id", sku.batch_id ? sku.batch_id : "");
-
     const requestOptions = {
       method: "POST",
       headers: myHeaders,
-      body: formdata,
+      body: JSON.stringify({
+        file_name: uploadedImageDetails.file?.name?.replace(/\s/g, '_'),
+        type: "editing",
+      }),
+      redirect: "follow",
+    };
+
+    const response = await fetch(
+      "https://api.carromm.com/s3/presigned-url",
+      requestOptions
+    );
+    if (!response.ok) {
+      throw new Error("Failed to upload image to S3");
+    }
+    const data = await response.json();
+    const presignedUrl = data.presigned_url;
+    const awsUrl = data.url;
+    console.log(awsUrl);
+    setAwsUrl(awsUrl);
+
+
+    const s3UploadResponse = await fetch(presignedUrl, {
+      method: 'PUT',
+      body: uploadedImageDetails.file
+    });
+
+    if (!s3UploadResponse.ok) {
+      throw new Error("Failed to upload image to S3");
+    }
+
+    const myHeaders2 = new Headers();
+    myHeaders2.append("accept", "application/json");
+    myHeaders2.append("Authorization", enterpriseId);
+
+    const formdata2 = new FormData();
+    formdata2.append("sku_id", sku.sku_id);
+    formdata2.append("image_url", awsUrl);
+    formdata2.append("batch_id", sku.batch_id ? sku.batch_id : "");
+
+    const requestOptions2 = {
+      method: "POST",
+      headers: myHeaders2,
+      body: formdata2,
       redirect: "follow",
     };
 
     const response2 = await fetch(
       "https://api.carromm.com/automobile/editor",
-      requestOptions
+      requestOptions2
     );
 
     const data2 = await response2.json();
     console.log(data2);
+
   }
 
   return (
@@ -123,7 +162,7 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
         <div className="flex h-full relative w-full justify-center items-end">
           <div className="relative">
             <Image
-              src={uploadedImage || "/vercel.svg"}
+              src={uploadedImageDetails.image_url || "/vercel.svg"}
               width={500}
               height={500}
               alt="Input Image"
@@ -139,9 +178,9 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
                 <p className="text-2xl font-bold">
                   {uploadingImageState
                     ? "Uploading"
-                    : uploadedImage
-                    ? "Change"
-                    : "Upload"}
+                    : uploadedImageDetails.file
+                      ? "Change"
+                      : "Upload"}
                 </p>
               </div>
             </label>
@@ -152,12 +191,16 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
           accept="image/*"
           onChange={(e) => {
             const file = e.target.files[0];
+
             if (file) {
-              setUploadingImageState(true);
               const reader = new FileReader();
               reader.onloadend = () => {
                 const imageUrl = reader.result;
-                setUploadedImage(imageUrl);
+                console.log();
+                setUploadedImageDetails({
+                  image_url: imageUrl,
+                  file: file,
+                });
               };
               reader.readAsDataURL(file);
               setUploadingImageState(false);
