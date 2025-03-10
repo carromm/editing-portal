@@ -162,7 +162,8 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
             </p>
           </div>
           <div className="flex h-full relative w-full justify-center">
-            <Image
+          
+            <img
               src={sku.input_url ? sku.input_url : "/loading.gif"}
               width={450}
               height={450}
@@ -172,7 +173,7 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
           </div>
         </div>
         <div className="flex w-full md:w-7/12 h-min relative">
-          <Image
+          <img
             src={sku.output_url ? sku.output_url : "/loading.gif"}
             width={900}
             height={900}
@@ -185,7 +186,7 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
       <div className="flex flex-row items-end w-full mt-4 ">
         <div className="flex h-full relative w-full justify-center items-end">
           <div className="relative">
-            <Image
+            <img
               src={uploadedImageDetails.image_url || "/vercel.svg"}
               width={500}
               height={500}
