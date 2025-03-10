@@ -183,6 +183,7 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
         </div>
       </div>
 
+
       <div className="flex flex-row items-end w-full mt-4 ">
         <div className="flex h-full relative w-full justify-center items-end">
           <div className="relative">
