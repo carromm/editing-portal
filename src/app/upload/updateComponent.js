@@ -37,7 +37,7 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
     );
 
     const data = await response.json();
-    if (!response.ok) {
+    if (response.ok) {
       console.log(data);
     } else {
       throw new Error("Failed to approve QC");
