@@ -160,6 +160,11 @@ export default function UpdateComponent({ sku, removeSku, enterpriseId }) {
             <p className="hover:border-black border bg-white text-sm p-2 px-3 w-fit rounded-md">
               QC comments: {sku.qc_comment}
             </p>
+            {sku.created_at && (
+              <p className="bg-white text-sm p-2 px-3 w-fit rounded-md">
+                Created at: {sku.created_at}
+              </p>
+            )}
           </div>
           <div className="flex h-full relative w-full justify-center">
           
