@@ -19,6 +19,7 @@ function UpdatePage() {
   const [createdAtFrom, setCreatedAtFrom] = useState("");
   const [createdAtTo, setCreatedAtTo] = useState("");
   const [skuIdFilter, setSkuIdFilter] = useState("");
+  const [bgIdFilter, setBgIdFilter] = useState("");
 
   async function fetchSkuData() {
     setLoading(true);
@@ -26,6 +27,7 @@ function UpdatePage() {
     if (createdAtFrom) params.append("created_at_from", createdAtFrom.replace("T", " ") + ":00");
     if (createdAtTo) params.append("created_at_to", createdAtTo.replace("T", " ") + ":00");
     if (skuIdFilter.trim()) params.append("sku_id", skuIdFilter.trim());
+    if (bgIdFilter.trim()) params.append("bg_id", bgIdFilter.trim());
 
     const queryString = params.toString();
     const url = `https://api.imagekoncept.com/automobile/editor${queryString ? `?${queryString}` : ""}`;
@@ -107,6 +109,16 @@ function UpdatePage() {
             value={skuIdFilter}
             onChange={(e) => setSkuIdFilter(e.target.value)}
             placeholder="Enter SKU ID"
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-sm font-medium text-gray-700 mb-1">BG ID</label>
+          <input
+            type="text"
+            value={bgIdFilter}
+            onChange={(e) => setBgIdFilter(e.target.value)}
+            placeholder="Enter BG ID"
             className="border border-gray-300 rounded-md px-3 py-2 text-sm"
           />
         </div>
